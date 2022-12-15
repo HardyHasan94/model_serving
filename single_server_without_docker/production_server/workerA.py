@@ -61,4 +61,4 @@ def get_accuracy():
 
     score = loaded_model.evaluate(X, y, verbose=0)
     #print("%s: %.2f%%" % (loaded_model.metrics_names[1], score[1]*100))
-    return score[1]*100
+    return f'{round(score[1]*100, 2)}%'
