@@ -4,9 +4,12 @@ import random
 import time
 
 import boto3
+from dotenv import dotenv_values
 
+dotenv_values = dotenv_values('.env')
 ec2 = boto3.resource('ec2')
-
+KeyName = dotenv_values['KeyName']
+SecurityGroups = dotenv_values['SecurityGroups']
 instance_tag = f'prod_server_{random.randint(0, 100)}'
 image_id = 'ami-0fd303abd14827300'
 cfg_file_path = os.getcwd() + '/cloud-cfg.txt'
@@ -21,8 +24,8 @@ instance = ec2.create_instances(
         MinCount=1,
         MaxCount=1,
         InstanceType='t3.micro',
-        KeyName='hardy_ec2_key',
-        SecurityGroups=['hardy_sg_eunorth1'],
+        KeyName=KeyName,
+        SecurityGroups=SecurityGroups,
         TagSpecifications=[
         {
 	        'ResourceType': 'instance',
