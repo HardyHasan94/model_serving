@@ -23,9 +23,9 @@ instance = ec2.create_instances(
         ImageId=image_id,
         MinCount=1,
         MaxCount=1,
-        InstanceType='t3.micro',
+        InstanceType='t3.medium',
         KeyName=KeyName,
-        SecurityGroups=SecurityGroups,
+        SecurityGroups=[SecurityGroups],
         TagSpecifications=[
         {
 	        'ResourceType': 'instance',
