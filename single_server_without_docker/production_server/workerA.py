@@ -34,7 +34,7 @@ CELERY_RESULT_BACKEND = 'rpc://'
 # Initialize Celery
 celery = Celery('workerA', broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
 
-@celery.task()
+@celery.task
 def add_nums(a, b):
    return a + b
 
@@ -43,7 +43,7 @@ def get_predictions():
     results ={}
     X, y = load_data()
     loaded_model = load_model()
-    predictions = loaded_model.predict_classes(X)
+    predictions = (loaded_model.predict(X) > 0.5).astype("int32")
     results['y'] = y.tolist()
     results['predicted'] =[]
     #print ('results[y]:', results['y'])
