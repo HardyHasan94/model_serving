@@ -38,13 +38,13 @@ instance = ec2.create_instances(
         UserData=userdata,
         )
 
-print('Sleeping for 10 seconds..')
+print('Sleeping for 10 seconds..\n')
 time.sleep(10)
-
-instance = instance[0]
-state = instance.state
-while state['Name'] != 'running':
-    print(f"Current state: {instance.state['Code']} {instance.state['Name']}")
-    time.sleep(5)
-
-print(f"\n\nFinal state: {instance.state['Code']} {instance.state['Name']}")
+instance = instances[0]
+print('Waiting for instance to be created..')
+instance_exists = instance.wait_until_exists()
+instance.reload()
+print(f"Instance with id={instance.instance_id} and public_ip_address={instance.public_ip_address} is created.")
+print('\nWaiting for instance to start running..')
+running = instance.wait_until_running()
+print('Instance is running!')
