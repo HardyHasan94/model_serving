@@ -19,7 +19,7 @@ if os.path.isfile(cfg_file_path):
 else:
     sys.exit("cloud-cfg.txt is not in current working directory.")
 
-instance = ec2.create_instances(
+instances = ec2.create_instances(
         ImageId=image_id,
         MinCount=1,
         MaxCount=1,
