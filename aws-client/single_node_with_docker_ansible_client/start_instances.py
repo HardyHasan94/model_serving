@@ -73,7 +73,7 @@ prod_instance = prod_instances[0]
 dev_instance = dev_instances[0]
 print('Waiting for both prod and dev instances to be created..')
 
-for name, instance in zip([prod_instance, dev_instance], ['Prod', 'Dev']):
+for instance, name in zip([prod_instance, dev_instance], ['Prod', 'Dev']):
     instance_exists = instance.wait_until_exists()
     instance.reload()
     print(f"{name} instance with id={instance.instance_id}, public_ip_address={instance.public_ip_address} "
