@@ -6,24 +6,26 @@ import time
 import boto3
 from dotenv import dotenv_values
 
-dotenv_values = dotenv_values('.env')
-ec2 = boto3.resource('ec2')
-KeyName = dotenv_values['KeyName']
-SecurityGroups = dotenv_values['SecurityGroups']
-instance_tag = f'prod_server_{random.randint(0, 100)}'
-image_id = 'ami-0fd303abd14827300'
+DOTENV_VALUES = dotenv_values('.env')
+KeyName = DOTENV_VALUES['KeyName']
+SecurityGroups = DOTENV_VALUES['SecurityGroups']
+Instance_Tag = f'prod_server_{random.randint(0, 100)}'
+Image_ID = 'ami-0fd303abd14827300'
+InstanceType = 't3.medium'
 cfg_file_path = os.getcwd() + '/cloud-cfg.txt'
 
+ec2 = boto3.resource('ec2')
+
 if os.path.isfile(cfg_file_path):
-    userdata = open(cfg_file_path, 'r').read()
+    UserData = open(cfg_file_path, 'r').read()
 else:
     sys.exit("cloud-cfg.txt is not in current working directory.")
 
 instances = ec2.create_instances(
-        ImageId=image_id,
+        ImageId=Image_ID,
         MinCount=1,
         MaxCount=1,
-        InstanceType='t3.medium',
+        InstanceType=InstanceType,
         KeyName=KeyName,
         SecurityGroups=[SecurityGroups],
         TagSpecifications=[
@@ -31,11 +33,11 @@ instances = ec2.create_instances(
 	        'ResourceType': 'instance',
 	         'Tags': [{
 	         	'Key': 'Name',
-	            'Value': instance_tag,
+	            'Value': Instance_Tag,
 	         }],
         }
         ],
-        UserData=userdata,
+        UserData=UserData,
         )
 
 print('Sleeping for 10 seconds..\n')
