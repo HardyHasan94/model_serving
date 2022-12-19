@@ -34,7 +34,7 @@ CELERY_RESULT_BACKEND = 'rpc://'
 # Initialize Celery
 celery = Celery('workerA', broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
 
-@celery.task()
+@celery.task
 def add_nums(a, b):
    return a + b
 
@@ -43,7 +43,7 @@ def get_predictions():
     results ={}
     X, y = load_data()
     loaded_model = load_model()
-    predictions = loaded_model.predict_classes(X)
+    predictions = (loaded_model.predict(X) > 0.5).astype("int32")
     results['y'] = y.tolist()
     results['predicted'] =[]
     #print ('results[y]:', results['y'])
@@ -61,5 +61,5 @@ def get_accuracy():
 
     score = loaded_model.evaluate(X, y, verbose=0)
     #print("%s: %.2f%%" % (loaded_model.metrics_names[1], score[1]*100))
-    return score[1]*100
+    return f'{round(score[1]*100, 2)}%'
 

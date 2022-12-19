@@ -1,4 +1,5 @@
 # first neural network with keras tutorial
+import numpy
 from numpy import loadtxt
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
@@ -50,7 +51,7 @@ loaded_model.load_weights("model.h5")
 print("Loaded model from disk")
 
 # make class predictions with the model
-predictions = loaded_model.predict_classes(X)
+predictions = (loaded_model.predict(X) > 0.5).astype("int32")
 # summarize the first 5 cases
 for i in range(5):
     print('%s => %d (expected %d)' % (X[i].tolist(), predictions[i], y[i]))

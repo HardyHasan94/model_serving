@@ -1,95 +1,83 @@
-# http://docs.openstack.org/developer/python-novaclient/ref/v2/servers.html
-import time, os, sys, random, re
-import inspect
-from os import environ as env
+import os
+import sys
+import random
+import time
 
-from  novaclient import client
-import keystoneclient.v3.client as ksclient
-from keystoneauth1 import loading
-from keystoneauth1 import session
+import boto3
+from dotenv import dotenv_values
 
+idf = random.randint(0, 100)
+DOTENV_VALUES = dotenv_values('.env')
+KeyName = DOTENV_VALUES['KeyName']
+SecurityGroups = DOTENV_VALUES['SecurityGroups']
+Prod_Instance_Tag = f'prod_server_docker_{idf}'
+Dev_Instance_Tag = f'dev_server_docker_{idf}'
+Image_ID = 'ami-0fd303abd14827300'
+InstanceType = 't3.medium'
+prod_cfg_file_path = os.getcwd() + '/prod-cloud-cfg.txt'
+dev_cfg_file_path = os.getcwd() + '/dev-cloud-cfg.txt'
 
-flavor = "ssc" 
-private_net = "SNIC Network"
-floating_ip_pool_name = None
-floating_ip = None
-image_name = "image-ID"
+ec2 = boto3.resource('ec2')
 
-identifier = random.randint(1000,9999)
-
-loader = loading.get_plugin_loader('password')
-
-auth = loader.load_from_options(auth_url=env['OS_AUTH_URL'],
-                                username=env['OS_USERNAME'],
-                                password=env['OS_PASSWORD'],
-                                project_name=env['OS_PROJECT_NAME'],
-                                project_domain_id=env['OS_PROJECT_DOMAIN_ID'],
-                                #project_id=env['OS_PROJECT_ID'],
-                                user_domain_name=env['OS_USER_DOMAIN_NAME'])
-
-sess = session.Session(auth=auth)
-nova = client.Client('2.1', session=sess)
-print ("user authorization completed.")
-
-image = nova.glance.find_image(image_name)
-
-flavor = nova.flavors.find(name=flavor)
-
-if private_net != None:
-    net = nova.neutron.find_network(private_net)
-    nics = [{'net-id': net.id}]
+if os.path.isfile(prod_cfg_file_path):
+    ProdUserData = open(prod_cfg_file_path, 'r').read()
 else:
-    sys.exit("private-net not defined.")
+    sys.exit("prod-cloud-cfg.txt is not in current working directory.")
 
-#print("Path at terminal when executing this file")
-#print(os.getcwd() + "\n")
-cfg_file_path =  os.getcwd()+'/prod-cloud-cfg.txt'
-if os.path.isfile(cfg_file_path):
-    userdata_prod = open(cfg_file_path)
+if os.path.isfile(dev_cfg_file_path):
+    DevUserData = open(dev_cfg_file_path, 'r').read()
 else:
-    sys.exit("prod-cloud-cfg.txt is not in current working directory")
+    sys.exit("dev_cfg_file_path is not in current working directory.")
 
-cfg_file_path =  os.getcwd()+'/dev-cloud-cfg.txt'
-if os.path.isfile(cfg_file_path):
-    userdata_dev = open(cfg_file_path)
-else:
-    sys.exit("dev-cloud-cfg.txt is not in current working directory")    
+prod_instances = ec2.create_instances(
+    ImageId=Image_ID,
+    MinCount=1,
+    MaxCount=1,
+    InstanceType=InstanceType,
+    KeyName=KeyName,
+    SecurityGroups=[SecurityGroups],
+    TagSpecifications=[
+    {
+        'ResourceType': 'instance',
+         'Tags': [{
+            'Key': 'Name',
+            'Value': Prod_Instance_Tag,
+         }],
+    }
+    ],
+    UserData=ProdUserData,
+    )
 
-secgroups = ['default']
+dev_instances = ec2.create_instances(
+    ImageId=Image_ID,
+    MinCount=1,
+    MaxCount=1,
+    InstanceType=InstanceType,
+    KeyName=KeyName,
+    SecurityGroups=[SecurityGroups],
+    TagSpecifications=[
+    {
+        'ResourceType': 'instance',
+         'Tags': [{
+            'Key': 'Name',
+            'Value': Dev_Instance_Tag,
+         }],
+    }
+    ],
+    UserData=DevUserData,
+    )
 
-print ("Creating instances ... ")
-instance_prod = nova.servers.create(name="prod_server_with_docker_"+str(identifier), image=image, flavor=flavor, key_name='<KEY-NAME>',userdata=userdata_prod, nics=nics,security_groups=secgroups)
-instance_dev = nova.servers.create(name="dev_server_"+str(identifier), image=image, flavor=flavor, key_name='<KEY-NAME>',userdata=userdata_dev, nics=nics,security_groups=secgroups)
-inst_status_prod = instance_prod.status
-inst_status_dev = instance_dev.status
-
-print ("waiting for 10 seconds.. ")
+print('Sleeping for 10 seconds..\n')
 time.sleep(10)
+prod_instance = prod_instances[0]
+dev_instance = dev_instances[0]
+print('Waiting for both prod and dev instances to be created..')
 
-while inst_status_prod == 'BUILD' or inst_status_dev == 'BUILD':
-    print ("Instance: "+instance_prod.name+" is in "+inst_status_prod+" state, sleeping for 5 seconds more...")
-    print ("Instance: "+instance_dev.name+" is in "+inst_status_dev+" state, sleeping for 5 seconds more...")
-    time.sleep(5)
-    instance_prod = nova.servers.get(instance_prod.id)
-    inst_status_prod = instance_prod.status
-    instance_dev = nova.servers.get(instance_dev.id)
-    inst_status_dev = instance_dev.status
-
-ip_address_prod = None
-for network in instance_prod.networks[private_net]:
-    if re.match('\d+\.\d+\.\d+\.\d+', network):
-        ip_address_prod = network
-        break
-if ip_address_prod is None:
-    raise RuntimeError('No IP address assigned!')
-
-ip_address_dev = None
-for network in instance_dev.networks[private_net]:
-    if re.match('\d+\.\d+\.\d+\.\d+', network):
-        ip_address_dev = network
-        break
-if ip_address_dev is None:
-    raise RuntimeError('No IP address assigned!')
-
-print ("Instance: "+ instance_prod.name +" is in " + inst_status_prod + " state" + " ip address: "+ ip_address_prod)
-print ("Instance: "+ instance_dev.name +" is in " + inst_status_dev + " state" + " ip address: "+ ip_address_dev)
+for name, instance in zip([prod_instance, dev_instance], ['Prod', 'Dev']):
+    instance_exists = instance.wait_until_exists()
+    instance.reload()
+    print(f"{name} instance with id={instance.instance_id}, public_ip_address={instance.public_ip_address} "
+          f"and private_ip_address={instance.private_ip_address} is created.")
+    print(f'\nWaiting for {name} instance to start running..')
+    running = instance.wait_until_running()
+    print(f'{name} instance is running!')
