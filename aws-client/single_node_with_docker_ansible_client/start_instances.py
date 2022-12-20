@@ -34,7 +34,6 @@ prod_instances = ec2.create_instances(
     MinCount=1,
     MaxCount=1,
     InstanceType=InstanceType,
-    KeyName=KeyName,
     SecurityGroups=[SecurityGroups],
     TagSpecifications=[
     {
@@ -53,7 +52,6 @@ dev_instances = ec2.create_instances(
     MinCount=1,
     MaxCount=1,
     InstanceType=InstanceType,
-    KeyName=KeyName,
     SecurityGroups=[SecurityGroups],
     TagSpecifications=[
     {
@@ -71,13 +69,13 @@ print('Sleeping for 10 seconds..\n')
 time.sleep(10)
 prod_instance = prod_instances[0]
 dev_instance = dev_instances[0]
-print('Waiting for both prod and dev instances to be created..')
+print('Waiting for both prod and dev instances to be created..\n')
 
 for instance, name in zip([prod_instance, dev_instance], ['Prod', 'Dev']):
     instance_exists = instance.wait_until_exists()
     instance.reload()
-    print(f"{name} instance with id={instance.instance_id}, public_ip_address={instance.public_ip_address} "
+    print(f"\t{name} instance with id={instance.instance_id}, public_ip_address={instance.public_ip_address} "
           f"and private_ip_address={instance.private_ip_address} is created.")
-    print(f'\nWaiting for {name} instance to start running..')
+    print(f'\n\tWaiting for {name} instance to start running..')
     running = instance.wait_until_running()
-    print(f'{name} instance is running!')
+    print(f'\t{name} instance is running!\n\n')

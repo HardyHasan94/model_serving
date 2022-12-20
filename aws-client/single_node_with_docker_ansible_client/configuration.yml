@@ -1,7 +1,5 @@
 - hosts: all
-  
   tasks:
-   
    - name: Generate hosts file
      lineinfile: dest=/etc/hosts
                  regexp='.*{{ item }}$'
@@ -10,10 +8,7 @@
      when: hostvars[item].ansible_default_ipv4.address is defined
      with_items: "{{groups['all']}}"
      become: true
-     
-   #- name: Set hostname
-   #  hostname: name="{{inventory_hostname}}"
-   #  become: true
+
 
    - name: apt update
      apt: update_cache=yes upgrade=dist
@@ -22,9 +17,9 @@
    - name: Download git repository
      become: true
      git:
-      repo: 'https://github.com/sztoor/model_serving.git'
-      dest: /model_serving 
-      
+      repo: 'https://github.com/HardyHasan94/model_serving.git'
+      dest: /model_serving
+
    - name: Change ownership of a directory
      become: true
      file:
@@ -35,7 +30,6 @@
       group: appuser
 
 - hosts: prodserver
- 
   vars_files:
    - setup_var.yml  
   
@@ -85,6 +79,9 @@
           "mtu": 1450
         }
 
+
+
+
    - name: Install Docker  
      apt: pkg=docker-ce state=present update_cache=true allow_unauthenticated=yes
      become: true
@@ -109,7 +106,6 @@
       chdir: /model_serving/ci_cd/production_server 
 
 - hosts: devserver
-  
   vars_files:
    - setup_var.yml
 
@@ -121,4 +117,4 @@
    - name: Install ML packages
      become: true
      pip: 
-      name: tensorflow==2.5.3, keras==2.4.1, numpy, future
+      name: tensorflow==2.8.0, numpy, future, protobuf=3.20.0
