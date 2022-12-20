@@ -117,4 +117,4 @@
    - name: Install ML packages
      become: true
      pip: 
-      name: tensorflow==2.8.0, numpy, future, protobuf=3.20.0
+      name: tensorflow==2.8.0, numpy, future, protobuf==3.20.0
